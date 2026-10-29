@@ -1,6 +1,6 @@
-# 日常打卡
+﻿# 日常打卡
 
-[![selftest](https://github.com/deathofy/daily-checkin-weapp/actions/workflows/selftest.yml/badge.svg)](https://github.com/deathofy/daily-checkin-weapp/actions/workflows/selftest.yml)
+[![selftest](https://github.com/huluoboqihao/daily-checkin-weapp/actions/workflows/selftest.yml/badge.svg)](https://github.com/huluoboqihao/daily-checkin-weapp/actions/workflows/selftest.yml)
 
 一个原生微信小程序：今天要做什么、坚持了多久、拿到了什么成就。
 AI 能力全部有本地降级，不配云环境也能完整跑。
