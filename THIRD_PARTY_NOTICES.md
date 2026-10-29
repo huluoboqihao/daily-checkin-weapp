@@ -1,18 +1,25 @@
 # 第三方资源说明
 
-| 资源 | 用途 | 版本与边界 |
-| --- | --- | --- |
-| 微信小程序平台及开发者工具 | 界面、事件和本地存储接口 | 基础库配置3.0.0；实际设备与工具版本未登记。平台、SDK和工具按其原有条款使用，不由本仓库MIT许可重新授权。 |
-| Node.js | 运行tools/selftest.js | 本次核验v24.19.0；运行时未随仓库打包。Node.js项目适用MIT及其附带的第三方声明。 |
-| DeepSeek | 辅助修改、检查代码 | 具体模型版本和历史服务入口未登记；服务适用其对应条款，不表示仓库包含或授权模型权重。 |
-| 系统表情与字形 | 显示Unicode图标 | 仓库保存Unicode字符，不分发字体文件；字形由运行环境提供。 |
+本项目为微信小程序，代码以 MIT 许可开放。以下列出运行、构建、测试与材料制作中使用的主要第三方资源。
 
-本小程序没有npm运行时依赖，不包含外部训练数据、模型权重、商业软件安装程序或系统字体。内置示例记录由固定偏移生成，不包含真实用户打卡数据。
+| 资源 | 用途 | 许可 / 条款 | 是否随作品分发 |
+|---|---|---|---|
+| 微信小程序平台与基础库 | 运行环境、界面、本地存储、端侧推理接口 | 微信平台服务协议 | 否 |
+| Node.js | 运行自检与云函数测试 | MIT | 否 |
+| DeepSeek API | 可选云端生成/解析/对话 | DeepSeek 用户协议 | 否（仅云函数调用） |
+| ONNX Runtime / `wx.createInferenceSession` | 端侧模型推理 | 随微信基础库提供 | 否 |
+| miniprogram-automator | 开发期 UI 回归测试 | MIT | 否 |
+| GitHub Actions | CI | GitHub 服务条款 | 否 |
+| python-docx / Pillow / pypdf / pypdfium2 | 报告与材料制作 | MIT / MIT-CMU / BSD-3-Clause / BSD-3-Clause | 否 |
+| 系统字体与 Word | 文档排版 | 随系统/软件授权 | 否 |
 
-官方来源：
+## 自有内容
 
-- 微信开发文档：https://developers.weixin.qq.com/miniprogram/dev/framework/
-- Node.js许可：https://github.com/nodejs/node/blob/main/LICENSE
-- DeepSeek用户协议：https://cdn.deepseek.com/policies/zh-CN/deepseek-terms-of-use.html
+- `models/icon-clf.onnx` 与 `utils/iconModel.js`：团队用合成数据训练的逻辑回归模型，随 MIT 代码开放；
+- 项目内背景、分类插图与空状态图：团队制作/生成，不含第三方图库素材；
+- 预设习惯、示例记录、文案：团队编写。
 
-仅对本仓库项目代码和文档授予MIT许可；第三方资源的原有权利归属和条款保持不变。
+## 未包含
+
+- 不包含账号密码、AppSecret、API 密钥、真实个人数据；
+- 不包含无权再分发的第三方图片、字体或数据集。

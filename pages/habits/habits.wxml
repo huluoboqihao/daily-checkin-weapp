@@ -1,17 +1,63 @@
-<view class="page">
+<view class="page {{themeClass}} {{fontClass}}">
+  <image class="page-bg" src="/assets/bg-wall.jpg" mode="aspectFill" />
 
-  <view class="head">
+  <view class="head anim-rise">
+    <image class="head-glow" src="/assets/hero-glow.jpg" mode="aspectFill" />
     <view class="head-t">习惯管理</view>
-    <view class="head-s">共 {{habits.length}} 个</view>
+    <view class="head-s">共 {{totalN}} 个{{archivedHabits.length ? '（' + archivedHabits.length + ' 个已暂停）' : ''}}</view>
   </view>
 
-  <view class="item" wx:for="{{habits}}" wx:key="id">
+  <!-- AI 输入：放在最顶部 -->
+  <view class="sec">
+    <text class="sec-title">AI 帮我定</text>
+    <text class="sec-more">{{aiSource === 'model' ? '模型生成' : (aiSource === 'mock' ? '本地示例' : '说一句就行')}}</text>
+  </view>
+
+  <view class="card">
+    <textarea class="ai-input" placeholder="比如：想开始健身，每天只有 20 分钟"
+              placeholder-class="ph" value="{{aiDesc}}" maxlength="120"
+              auto-height bindinput="onAiDesc" />
+    <view class="ai-btn {{aiBusy ? 'busy' : ''}}" bindtap="genAi">{{aiBusy ? '生成中…' : '生成建议'}}</view>
+
+    <view class="ai-list" wx:if="{{aiItems.length > 0}}">
+      <view class="ai-item" wx:for="{{aiItems}}" wx:key="name" data-i="{{index}}" bindtap="addAi">
+        <view class="ai-icon" style="background:{{item.color}}">{{item.icon}}</view>
+        <text class="ai-name">{{item.name}}</text>
+        <text class="ai-add">＋</text>
+      </view>
+      <view class="ai-all" bindtap="addAiAll">全部添加</view>
+    </view>
+
+    <view class="ai-note" wx:if="{{aiSource === 'mock'}}">
+      当前是本地示例引擎，配置云环境后才会调用真实模型。
+    </view>
+  </view>
+
+  <view class="item" wx:for="{{habits}}" wx:key="id"
+        data-id="{{item.id}}" bindtap="openEdit">
     <view class="it-icon" style="background:{{item.color}}">{{item.icon}}</view>
     <view class="it-name">{{item.name}}</view>
+    <view class="it-tag" wx:if="{{item.type === 'timer'}}">计时 {{item.targetSeconds / 60}} 分钟</view>
+    <view class="it-act" data-id="{{item.id}}" data-name="{{item.name}}" catchtap="archive">暂停</view>
     <view class="it-del" data-id="{{item.id}}" data-name="{{item.name}}" catchtap="remove">删除</view>
   </view>
 
+  <view class="item-empty-tip" wx:if="{{habits.length > 0}}">点习惯可以改名、换图标或改时长</view>
+
   <view class="empty" wx:if="{{habits.length === 0}}">还没有习惯，从下面挑几个</view>
+
+  <!-- 已暂停：记录还在，只是不再出现在今日页 -->
+  <view class="sec" wx:if="{{archivedHabits.length > 0}}">
+    <text class="sec-title">已暂停</text>
+    <text class="sec-more">记录保留，随时恢复</text>
+  </view>
+
+  <view class="item paused" wx:for="{{archivedHabits}}" wx:key="id">
+    <view class="it-icon muted" style="background:{{item.color}}">{{item.icon}}</view>
+    <view class="it-name muted">{{item.name}}</view>
+    <view class="it-act ok" data-id="{{item.id}}" catchtap="unarchive">恢复</view>
+    <view class="it-del" data-id="{{item.id}}" data-name="{{item.name}}" catchtap="remove">删除</view>
+  </view>
 
   <!-- 推荐：点一下就能加，不用想也不用打字 -->
   <view class="sec" wx:if="{{presetCats.length > 0}}">
@@ -20,7 +66,10 @@
   </view>
 
   <view class="card" wx:for="{{presetCats}}" wx:for-item="cat" wx:key="key">
-    <view class="cat-name">{{cat.name}}</view>
+    <view class="cat-head">
+      <image class="cat-icon" src="/assets/cat-{{cat.key}}.jpg" mode="aspectFill" />
+      <text class="cat-name">{{cat.name}}</text>
+    </view>
     <view class="presets">
       <view class="preset {{it.added ? 'added' : ''}}"
             wx:for="{{cat.items}}" wx:for-item="it" wx:key="name"
@@ -41,6 +90,12 @@
     <input class="name-input" placeholder="比如：早起、背 20 个单词"
            placeholder-class="ph" value="{{name}}" maxlength="12" bindinput="onName" />
 
+    <view class="emoji-tip" wx:if="{{nameEmoji}}" bindtap="applyEmoji">
+      建议图标 <text class="emoji-tip-e">{{nameEmoji}}</text> · 点一下换上
+      <text class="emoji-tip-s" wx:if="{{modelReady}}">（端侧模型）</text>
+      <text class="emoji-tip-s" wx:else>（本地规则）</text>
+    </view>
+
     <view class="fld-label">图标</view>
     <view class="icons">
       <view class="ic {{icon === item ? 'on' : ''}}"
@@ -55,6 +110,17 @@
             style="background:{{item}}" data-v="{{item}}" bindtap="pickColor"></view>
     </view>
 
+    <view class="fld-label">打卡方式</view>
+    <view class="types">
+      <view class="ty {{type === 'simple' ? 'on' : ''}}" data-v="simple" bindtap="pickType">普通打卡</view>
+      <view class="ty {{type === 'timer' ? 'on' : ''}}" data-v="timer" bindtap="pickType">计时打卡</view>
+    </view>
+    <view class="minutes" wx:if="{{type === 'timer'}}">
+      <input class="min-input" type="number" value="{{minutes}}" bindinput="onMinutes" />
+      <text class="min-unit">分钟</text>
+      <text class="min-tip">到点后手动点「完成」</text>
+    </view>
+
     <view class="preview">
       <view class="pv-icon" style="background:{{color}}">{{icon}}</view>
       <view class="pv-name">{{name || '习惯名称'}}</view>
@@ -65,6 +131,57 @@
 
   <view class="tip">
     数据只存在本机。删掉小程序或清除缓存就没了。
+  </view>
+
+  <!-- 编辑已有习惯 -->
+  <view class="mask" wx:if="{{editing}}" bindtap="closeEdit"></view>
+  <view class="sheet" wx:if="{{editing}}">
+    <view class="sheet-head">
+      <text class="sheet-title">编辑习惯</text>
+      <text class="sheet-close" bindtap="closeEdit">取消</text>
+    </view>
+
+    <input class="name-input" placeholder="习惯名称" placeholder-class="ph"
+           value="{{editName}}" maxlength="12" bindinput="onEditName" />
+
+    <view class="fld-label">图标</view>
+    <view class="icons">
+      <view class="ic {{editIcon === item ? 'on' : ''}}"
+            wx:for="{{icons}}" wx:key="*this"
+            data-v="{{item}}" bindtap="editPickIcon">{{item}}</view>
+    </view>
+
+    <view class="fld-label">颜色</view>
+    <view class="colors">
+      <view class="cl {{editColor === item ? 'on' : ''}}"
+            wx:for="{{colors}}" wx:key="*this"
+            style="background:{{item}}" data-v="{{item}}" bindtap="editPickColor"></view>
+    </view>
+
+    <view class="fld-label">打卡方式</view>
+    <view class="types">
+      <view class="ty {{editType === 'simple' ? 'on' : ''}}" data-v="simple" bindtap="editPickType">普通打卡</view>
+      <view class="ty {{editType === 'timer' ? 'on' : ''}}" data-v="timer" bindtap="editPickType">计时打卡</view>
+    </view>
+    <view class="minutes" wx:if="{{editType === 'timer'}}">
+      <input class="min-input" type="number" value="{{editMinutes}}" bindinput="onEditMinutes" />
+      <text class="min-unit">分钟</text>
+      <text class="min-tip">到点后手动点「完成」</text>
+    </view>
+
+    <view class="preview">
+      <view class="pv-icon" style="background:{{editColor}}">{{editIcon}}</view>
+      <view class="pv-name">{{editName || '习惯名称'}}</view>
+    </view>
+
+    <view class="fld-label">排序</view>
+    <view class="sort-row">
+      <view class="sort-btn" bindtap="moveUp">↑ 上移</view>
+      <view class="sort-btn" bindtap="moveDown">↓ 下移</view>
+    </view>
+
+    <view class="add-btn" bindtap="saveEdit">保存</view>
+    <view class="sheet-note">改名、换图标不会动历史打卡记录。</view>
   </view>
 
 </view>

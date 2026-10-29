@@ -2,19 +2,20 @@
   "pages": [
     "pages/index/index",
     "pages/stats/stats",
-    "pages/habits/habits"
+    "pages/habits/habits",
+    "pages/import/import"
   ],
   "window": {
-    "navigationBarBackgroundColor": "#faf7f2",
+    "navigationBarBackgroundColor": "#F2F2F7",
     "navigationBarTitleText": "日常打卡",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#faf7f2",
+    "backgroundColor": "#F2F2F7",
     "backgroundTextStyle": "dark"
   },
   "tabBar": {
-    "color": "#a89e8f",
-    "selectedColor": "#e8674a",
-    "backgroundColor": "#ffffff",
+    "color": "#8E8E93",
+    "selectedColor": "#FF6B4A",
+    "backgroundColor": "#FFFFFF",
     "borderStyle": "white",
     "list": [
       { "pagePath": "pages/index/index", "text": "今日" },
@@ -24,5 +25,8 @@
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json",
+  "networkTimeout": {
+    "request": 600000
+  },
   "lazyCodeLoading": "requiredComponents"
 }

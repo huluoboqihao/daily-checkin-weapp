@@ -1,0 +1,7 @@
+{
+  "name": "parsetasks",
+  "version": "1.0.0",
+  "description": "从聊天/通知文字里抽取待办",
+  "main": "index.js",
+  "private": true
+}

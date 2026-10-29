@@ -1,10 +1,11 @@
 {
   "description": "日常打卡 —— 习惯养成",
-  "appid": "touristappid",
-  "projectname": "日常打卡",
+  "appid": "wxd0826fe746f14b5d",
+  "projectname": "daily-checkin-weapp",
   "compileType": "miniprogram",
-  "libVersion": "3.0.0",
+  "libVersion": "3.17.3",
   "miniprogramRoot": "./",
+  "cloudfunctionRoot": "cloudfunctions/",
   "packOptions": {
     "ignore": [],
     "include": []

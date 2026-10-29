@@ -40,7 +40,19 @@ const ACHIEVEMENTS = [
   { id: 'd30',     name: '月度常客',   desc: '累计活跃 30 天',       icon: '🗓', metric: 'activeDays',    target: 30 },
 
   { id: 'h3',      name: '三线并进',   desc: '同时跟踪 3 个习惯',    icon: '🧩', metric: 'habitCount',    target: 3 },
-  { id: 'h5',      name: '五事并行',   desc: '同时跟踪 5 个习惯',    icon: '🎪', metric: 'habitCount',    target: 5 }
+  { id: 'h5',      name: '五事并行',   desc: '同时跟踪 5 个习惯',    icon: '🎪', metric: 'habitCount',    target: 5 },
+
+  // 一次性待办也计入成就，做了不该白做
+  { id: 'k10',     name: '待办清道夫', desc: '完成 10 件待办',       icon: '🧹', metric: 'tasksDone',     target: 10 },
+
+  // 周/月周期成就：不是每天都要打卡，按自然周/月结算
+  // 措辞用「单周 / 单月」：达成一次就永久保留，不是每周每月重置
+  { id: 'w5',      name: '单周五次',   desc: '单周打卡 5 次',        icon: '📅', metric: 'bestWeekCheckins',    target: 5,  period: '每周' },
+  { id: 'w15',     name: '单周十五次', desc: '单周打卡 15 次',       icon: '🗂', metric: 'bestWeekCheckins',    target: 15, period: '每周' },
+  { id: 'w4d',     name: '一周四天',   desc: '单周活跃 4 天',        icon: '🌈', metric: 'bestWeekActiveDays',  target: 4,  period: '每周' },
+  { id: 'm20',     name: '单月二十次', desc: '单月打卡 20 次',       icon: '🌙', metric: 'bestMonthCheckins',   target: 20, period: '每月' },
+  { id: 'm60',     name: '月度六十次', desc: '单月打卡 60 次',       icon: '🌟', metric: 'bestMonthCheckins',   target: 60, period: '每月' },
+  { id: 'm10d',    name: '月度十天',   desc: '单月活跃 10 天',       icon: '📆', metric: 'bestMonthActiveDays', target: 10, period: '每月' }
 ]
 
 /**
@@ -56,6 +68,7 @@ function evaluate(stats) {
     const progress = Math.max(0, Number(s[a.metric]) || 0)
     const target = a.target > 0 ? a.target : 1
     return Object.assign({}, a, {
+      period: a.period || '累计',
       progress: progress,
       unlocked: progress >= a.target,
       // 封顶 100，进度条不该画出去

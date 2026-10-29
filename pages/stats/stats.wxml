@@ -1,17 +1,29 @@
-<view class="page">
+<view class="page {{themeClass}} {{fontClass}}">
+  <image class="page-bg" src="/assets/bg-wall.jpg" mode="aspectFill" />
 
   <view class="head">
+    <image class="head-glow" src="/assets/hero-glow.jpg" mode="aspectFill" />
     <view class="head-t">统计</view>
-    <view class="head-s">最近 8 周</view>
+    <view class="head-s">近 30 天 · 环比与成就</view>
+  </view>
+
+  <!-- AI 输入：放在最顶部 -->
+  <view class="card ai-bar ai-top">
+    <view class="ai-dot">AI</view>
+    <input class="ai-bar-input" placeholder="问问教练：怎么坚持下去？"
+           value="{{coachInput}}" bindinput="onCoachInput"
+           confirm-type="send" bindconfirm="sendCoach" />
+    <view class="ai-bar-btn {{coachBusy ? 'busy' : ''}}" bindtap="toggleCoach">{{coachBusy ? '停止' : '发送'}}</view>
   </view>
 
   <view class="empty" wx:if="{{items.length === 0}}">
+    <image class="empty-art" src="/assets/empty-plant.jpg" mode="aspectFit" />
     <view class="empty-t">还没有习惯</view>
     <view class="empty-s">去「习惯」页添加一个</view>
   </view>
 
   <block wx:else>
-    <view class="summary">
+    <view class="summary {{animClass}}">
       <view class="sum-i">
         <text class="sum-n">{{items.length}}</text>
         <text class="sum-l">习惯数</text>
@@ -26,6 +38,46 @@
         <text class="sum-n">{{totalStreak}}</text>
         <text class="sum-l">连续合计</text>
       </view>
+      <view class="sum-div"></view>
+      <view class="sum-i">
+        <text class="sum-n">{{tasksDone}}</text>
+        <text class="sum-l">待办完成</text>
+      </view>
+    </view>
+
+    <!-- AI 洞察：每条结论都能指回具体记录，不是通用文案 -->
+    <view class="card insight {{animClass}}" wx:if="{{insights.length > 0}}">
+      <view class="ins-head">
+        <text class="ins-title">AI 洞察</text>
+        <text class="ins-sub">基于近 4 周记录</text>
+      </view>
+      <view class="ins-line" wx:for="{{insights}}" wx:key="*this">
+        <text class="ins-dot">·</text>
+        <text class="ins-t">{{item}}</text>
+      </view>
+    </view>
+
+    <!-- 本周回顾：最近 7 天的完成率与最容易断的一天 -->
+    <view class="card review {{animClass}}" wx:if="{{review}}">
+      <view class="rv-top">
+        <view>
+          <view class="rv-label">近 7 天完成率</view>
+          <view class="rv-num">{{review.avgPct}}<text class="rv-unit">%</text></view>
+        </view>
+        <view class="rv-task">待办 {{review.tasksDone}}/{{review.tasksTotal}}</view>
+      </view>
+
+      <view class="rv-bars">
+        <view class="rv-col" wx:for="{{review.days}}" wx:key="key">
+          <view class="rv-track">
+            <view class="rv-fill" style="height:{{item.pct}}%"></view>
+          </view>
+          <text class="rv-wd">{{item.wd}}</text>
+        </view>
+      </view>
+
+      <view class="rv-insight">{{review.insight}}</view>
+      <view class="rv-share" bindtap="makeWeeklyPoster">生成本周回顾海报</view>
     </view>
 
     <!-- 这页全是历史记录，所以在这里把「示例数据」说清楚 -->
@@ -38,29 +90,38 @@
       <view class="it-head">
         <view class="it-icon" style="background:{{item.color}}">{{item.icon}}</view>
         <view class="it-body">
-          <view class="it-name">{{item.name}}</view>
+          <view class="it-name">{{item.name}}<text class="it-pause" wx:if="{{item.archived}}">已暂停</text></view>
           <view class="it-sub">连续 {{item.streak}} 天 · 本周 {{item.weekDone}}/7</view>
         </view>
         <view class="it-pct">{{item.weekPct}}%</view>
       </view>
 
-      <!-- 日历热力图：每列一周，从周一到周日 -->
-      <view class="cal">
-        <view class="cal-w" wx:for="{{item.weeks}}" wx:for-item="w" wx:key="wi">
-          <view class="cal-c {{c.done ? 'on' : ''}} {{c.future ? 'fut' : ''}} {{c.isToday ? 'today' : ''}}"
-                wx:for="{{w.cells}}" wx:for-item="c" wx:key="di"
-                style="{{c.done ? 'background:' + item.color : ''}}"></view>
+      <!-- 近 30 天日历：带日期号，比 56 个小方格直观 -->
+      <view class="m30-head">
+        <text class="m30-title">近 30 天</text>
+        <text class="m30-sum">{{item.monthDone}}/30 天 · {{item.monthPct}}%</text>
+      </view>
+      <view class="m30">
+        <view class="m30-wd">
+          <text wx:for="{{weekdays}}" wx:key="*this">{{item}}</text>
+        </view>
+        <view class="m30-week" wx:for="{{item.weeks}}" wx:for-item="w" wx:key="wi">
+          <view class="m30-cell {{c.blank ? 'out' : ''}} {{c.done ? 'on' : ''}} {{c.isToday ? 'today' : ''}}"
+                wx:for="{{w.cells}}" wx:for-item="c" wx:key="key"
+                style="{{c.done ? 'background:' + item.color + ';border-color:' + item.color : ''}}">
+            <text class="m30-d">{{c.label}}</text>
+          </view>
         </view>
       </view>
 
       <view class="it-foot">
-        <text>30 天完成率 {{item.monthPct}}%</text>
         <text>累计 {{item.total}} 次</text>
+        <text class="{{item.trendUp ? 'trend-up' : ''}}">{{item.trendLabel}}</text>
       </view>
     </view>
 
     <view class="legend">
-      每列一周（上到下为周一到周日），有色块表示当天已打卡。
+      每个格子是一天，数字为日期；有色表示当天已打卡，橙色描边是今天。
     </view>
 
     <!-- 成就墙 -->
@@ -72,12 +133,13 @@
     <view class="wall">
       <view class="cell {{item.unlocked ? 'on' : ''}}" wx:for="{{wall}}" wx:key="id">
         <view class="cell-i">{{item.icon}}</view>
-        <view class="cell-n">{{item.name}}</view>
+        <view class="cell-n">{{item.name}}<text class="cell-period" wx:if="{{item.period !== '累计'}}">{{item.period}}</text></view>
         <view class="cell-d">{{item.desc}}</view>
 
         <block wx:if="{{item.unlocked}}">
           <!-- 日期记的是「App 发现的那天」，不是真正达成的那天，所以措辞用「达成于」 -->
           <view class="cell-t ok">{{item.unlockedAt ? '达成于 ' + item.unlockedAt : '已达成'}}</view>
+          <view class="cell-poster" data-id="{{item.id}}" catchtap="makePoster">生成海报</view>
         </block>
         <block wx:else>
           <view class="cell-bar">
@@ -92,5 +154,41 @@
       成就一旦达成就永久保留 —— 就算之后删了习惯、指标掉下来，也不会退回未解锁。
     </view>
   </block>
+
+  <!-- AI 教练：问题走本地兜底或云模型，上下文只带聚合统计 -->
+  <view class="sec">
+    <text class="sec-title">AI 教练</text>
+    <text class="sec-more">基于你的统计</text>
+  </view>
+
+  <view class="card coach">
+    <view class="coach-empty" wx:if="{{coachMsgs.length === 0}}">问一句，比如「怎么坚持下去？」</view>
+
+    <view class="msg {{item.role}}" wx:for="{{coachMsgs}}" wx:key="index">
+      <text class="msg-t">{{item.text}}</text>
+    </view>
+
+    <view class="coach-note">未配置云环境时使用本地教练，不联网。</view>
+  </view>
+
+  <!-- 海报画布：不出现在视觉里，只用来按指令绘制并导出图片 -->
+  <canvas canvas-id="posterCanvas" id="posterCanvas" class="poster-canvas"></canvas>
+
+  <!-- 海报预览：先看效果，再决定存不存 -->
+  <view class="poster-mask" wx:if="{{posterVisible}}">
+    <view class="poster-box">
+      <view class="poster-themes">
+        <view class="pt {{posterTheme === 'editorial' ? 'on' : ''}}" data-theme="editorial" catchtap="setPosterTheme">纸感</view>
+        <view class="pt {{posterTheme === 'night' ? 'on' : ''}}" data-theme="night" catchtap="setPosterTheme">墨色</view>
+        <view class="pt {{posterTheme === 'split' ? 'on' : ''}}" data-theme="split" catchtap="setPosterTheme">双色</view>
+      </view>
+      <image class="poster-img" src="{{posterPreview}}" mode="widthFix" />
+      <view class="poster-actions">
+        <view class="p-btn ghost" bindtap="closePoster">关闭</view>
+        <view class="p-btn main" bindtap="savePosterTap">保存</view>
+        <view class="p-btn share" bindtap="sharePosterTap">分享</view>
+      </view>
+    </view>
+  </view>
 
 </view>

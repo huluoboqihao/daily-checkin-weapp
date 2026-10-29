@@ -1,0 +1,269 @@
+/* 底部固定操作条会盖住最后一张草稿，这里多留一段 */
+.page {
+  padding-bottom: 260rpx;
+}
+
+.head {
+  padding: 48rpx 8rpx 24rpx;
+}.head-t {
+  font-size: calc(68rpx * var(--fs));
+  font-weight: 700;
+  letter-spacing: -1rpx;
+  color: #1C1C1E;
+}
+.head-s {
+  margin-top: 6rpx;
+  font-size: calc(26rpx * var(--fs));
+  color: #8E8E93;
+}
+
+.seg {
+  display: flex;
+  background: #E9E9EE;
+  border-radius: 24rpx;
+  padding: 6rpx;
+  margin-bottom: 20rpx;
+}
+.seg-i {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  font-size: calc(27rpx * var(--fs));
+  color: #8E8E93;
+  border-radius: 18rpx;
+}
+.seg-i.on {
+  background: #FFFFFF;
+  color: #1C1C1E;
+  font-weight: 600;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.ta {
+  width: 100%;
+  min-height: 220rpx;
+  font-size: calc(29rpx * var(--fs));
+  line-height: 1.6;
+  color: #1C1C1E;
+}
+
+.pick {
+  height: 96rpx;
+  border-radius: 20rpx;
+  background: #F2F2F7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(28rpx * var(--fs));
+  color: #1C1C1E;
+}
+.shot {
+  width: 100%;
+  margin-top: 18rpx;
+  border-radius: 20rpx;
+}
+.note {
+  margin-top: 16rpx;
+  font-size: calc(22rpx * var(--fs));
+  line-height: 1.6;
+  color: #8E8E93;
+}
+.ocr-actions {
+  display: flex;
+  margin-top: 16rpx;
+}
+.ocr-btn {
+  padding: 12rpx 26rpx;
+  margin-right: 14rpx;
+  border-radius: 18rpx;
+  background: #F2F2F7;
+  font-size: calc(23rpx * var(--fs));
+  color: #1C1C1E;
+}
+.theme-dark .ocr-btn {
+  background: #2C2C2E;
+  color: #F2F2F7;
+}
+
+.parse-btn {
+  height: 92rpx;
+  border-radius: 28rpx;
+  background: #FF6B4A;
+  color: #FFFFFF;
+  font-size: calc(30rpx * var(--fs));
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10rpx;
+}
+.parse-btn.busy {
+  background: #FFC2B3;
+}
+
+.helper {
+  margin: 6rpx 0 20rpx;
+  text-align: center;
+  font-size: calc(23rpx * var(--fs));
+  color: #8E8E93;
+  padding: 12rpx 0;
+}
+
+.draft {
+  background: #FFFFFF;
+  border-radius: 28rpx;
+  padding: 26rpx;
+  margin-bottom: 16rpx;
+}
+.d-top {
+  display: flex;
+  align-items: center;
+}
+.d-title {
+  flex: 1;
+  font-size: calc(31rpx * var(--fs));
+  font-weight: 600;
+  color: #1C1C1E;
+}
+.d-del {
+  font-size: calc(22rpx * var(--fs));
+  color: #FF3B30;
+  padding: 6rpx 10rpx;
+}
+.d-row {
+  display: flex;
+  align-items: center;
+  margin-top: 16rpx;
+}
+.chip {
+  padding: 10rpx 20rpx;
+  margin-right: 12rpx;
+  background: #F2F2F7;
+  border-radius: 16rpx;
+  font-size: calc(23rpx * var(--fs));
+  color: #1C1C1E;
+}
+.d-loc {
+  flex: 1;
+  height: 64rpx;
+  padding: 0 20rpx;
+  background: #F2F2F7;
+  border-radius: 16rpx;
+  font-size: calc(25rpx * var(--fs));
+}
+.d-add {
+  margin-left: 14rpx;
+  padding: 14rpx 28rpx;
+  border-radius: 20rpx;
+  background: #1C1C1E;
+  color: #FFFFFF;
+  font-size: calc(24rpx * var(--fs));
+}
+.d-ev {
+  margin-top: 14rpx;
+  font-size: calc(21rpx * var(--fs));
+  line-height: 1.6;
+  color: #C7C7CC;
+}
+.d-conflict {
+  margin-top: 12rpx;
+  padding: 10rpx 16rpx;
+  border-radius: 14rpx;
+  font-size: calc(21rpx * var(--fs));
+}
+.d-conflict.high {
+  background: #FFEBE7;
+  color: #D70015;
+}
+.d-conflict.warn {
+  background: #FFF6E5;
+  color: #B26A00;
+}
+.d-conflict-row {
+  display: flex;
+  align-items: center;
+  margin-top: 12rpx;
+}
+.d-conflict-row .d-conflict {
+  margin-top: 0;
+}
+.d-fix {
+  margin-left: 14rpx;
+  padding: 8rpx 18rpx;
+  border-radius: 14rpx;
+  background: #1C1C1E;
+  color: #FFFFFF;
+  font-size: calc(20rpx * var(--fs));
+}
+
+.footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20rpx 32rpx calc(20rpx + env(safe-area-inset-bottom));
+  background: rgba(242, 242, 247, 0.94);
+  display: flex;
+  align-items: center;
+  border-top: 1rpx solid rgba(60, 60, 67, 0.12);
+}
+.f-count {
+  flex: 1;
+  font-size: calc(24rpx * var(--fs));
+  color: #8E8E93;
+}
+.f-btn {
+  padding: 22rpx 44rpx;
+  border-radius: 28rpx;
+  background: #FF6B4A;
+  color: #FFFFFF;
+  font-size: calc(28rpx * var(--fs));
+  font-weight: 600;
+}
+
+/* ── 深色模式 ───────────────────────────────── */
+.theme-dark .head-t,
+.theme-dark .ta,
+.theme-dark .pick,
+.theme-dark .d-title,
+.theme-dark .chip,
+.theme-dark .d-loc,
+.theme-dark .seg-i.on {
+  color: #F2F2F7;
+}
+.theme-dark .head-s,
+.theme-dark .note,
+.theme-dark .helper,
+.theme-dark .f-count,
+.theme-dark .d-ev,
+.theme-dark .seg-i {
+  color: #8E8E93;
+}
+.theme-dark .seg {
+  background: #2C2C2E;
+}
+.theme-dark .seg-i.on {
+  background: #3A3A3C;
+}
+.theme-dark .pick,
+.theme-dark .chip,
+.theme-dark .d-loc {
+  background: #2C2C2E;
+}
+.theme-dark .d-add,
+.theme-dark .d-fix {
+  background: #F2F2F7;
+  color: #1C1C1E;
+}
+.theme-dark .footer {
+  background: rgba(28, 28, 30, 0.94);
+  border-top-color: rgba(84, 84, 88, 0.65);
+}
+.theme-dark .d-conflict.high {
+  background: rgba(215, 0, 21, 0.22);
+  color: #FF6961;
+}
+.theme-dark .d-conflict.warn {
+  background: rgba(178, 106, 0, 0.25);
+  color: #FFB340;
+}

@@ -1,0 +1,76 @@
+<view class="page {{themeClass}} {{fontClass}}">
+  <image class="page-bg" src="/assets/bg-wall.jpg" mode="aspectFill" />
+
+  <view class="head">
+    <view class="head-t">导入待办</view>
+    <view class="head-s">从聊天或通知里抽出要打卡的事</view>
+  </view>
+
+  <view class="seg">
+    <view class="seg-i {{mode === 'text' ? 'on' : ''}}" data-mode="text" bindtap="setMode">粘贴文字</view>
+    <view class="seg-i {{mode === 'image' ? 'on' : ''}}" data-mode="image" bindtap="setMode">截图识别</view>
+  </view>
+
+  <view class="card" wx:if="{{mode === 'text'}}">
+    <textarea class="ta" placeholder="粘贴一段聊天或通知，比如：明天下午 3 点前把周报发我，公司"
+              placeholder-class="ph" value="{{text}}" bindinput="onText"
+              maxlength="2000" auto-height />
+  </view>
+
+  <view class="card" wx:if="{{mode === 'image'}}">
+    <view class="pick" bindtap="chooseImage">{{imagePath ? '重新选择截图' : '选择聊天截图'}}</view>
+    <image wx:if="{{imagePath}}" class="shot" src="{{imagePath}}" mode="widthFix" />
+    <view class="note" wx:if="{{ocrNote}}">{{ocrNote}}</view>
+    <view class="ocr-actions" wx:if="{{imagePath && ocrNote && !busy}}">
+      <view class="ocr-btn" bindtap="retryOcr">重新识别</view>
+      <view class="ocr-btn ghost" bindtap="switchToText">改为粘贴文字</view>
+    </view>
+  </view>
+
+  <view class="parse-btn {{busy ? 'busy' : ''}}" bindtap="parseNow">{{busy ? '解析中…' : '解析成待办'}}</view>
+
+  <view class="helper" wx:if="{{!drafts.length}}" bindtap="addManual">不想描述？手动加一条</view>
+  <view class="helper" wx:if="{{drafts.length}}" bindtap="suggestTimes">时间不确定？按空档帮我排</view>
+
+  <block wx:if="{{drafts.length}}">
+    <view class="sec">
+      <text class="sec-title">草稿 · {{drafts.length}} 条</text>
+      <text class="sec-more">{{source === 'model' ? '模型解析' : '本地解析'}}</text>
+    </view>
+
+    <view class="draft" wx:for="{{drafts}}" wx:key="key">
+      <view class="d-top">
+        <input class="d-title" value="{{item.title}}" data-i="{{index}}" data-field="title" bindinput="onField" maxlength="24" />
+        <view class="d-del" data-i="{{index}}" catchtap="removeDraft">移除</view>
+      </view>
+
+      <view class="d-row">
+        <picker mode="date" value="{{item.date}}" data-i="{{index}}" bindchange="onDate">
+          <view class="chip">{{item.date || '选日期'}}</view>
+        </picker>
+        <picker mode="time" value="{{item.startTime}}" data-i="{{index}}" bindchange="onTime">
+          <view class="chip">{{item.startTime || '选时间'}}</view>
+        </picker>
+        <view class="chip">{{item.durationMin}} 分钟</view>
+      </view>
+
+      <view class="d-row">
+        <input class="d-loc" placeholder="地点（可选）" placeholder-class="ph" value="{{item.location}}"
+               data-i="{{index}}" data-field="location" bindinput="onField" />
+        <view class="d-add" data-i="{{index}}" catchtap="saveOne">加入</view>
+      </view>
+
+      <view class="d-ev" wx:if="{{item.evidence}}">“{{item.evidence}}”</view>
+      <view class="d-conflict-row" wx:if="{{conflicts[item.key]}}">
+        <view class="d-conflict {{conflicts[item.key].severity}}">{{conflicts[item.key].message}}</view>
+        <view class="d-fix" wx:if="{{suggestions[item.key]}}" data-i="{{index}}" catchtap="applySuggestion">改到 {{suggestions[item.key]}}</view>
+      </view>
+    </view>
+
+    <view class="footer">
+      <view class="f-count">{{drafts.length}} 条待加入</view>
+      <view class="f-btn" bindtap="saveAll">全部加入</view>
+    </view>
+  </block>
+
+</view>

@@ -8,6 +8,8 @@
  * 但错了很难发现：界面上永远显示一个看着挺合理的数字。
  */
 
+const R = require('./record.js')
+
 function pad(n) {
   return n < 10 ? '0' + n : '' + n
 }
@@ -42,11 +44,11 @@ function streak(record, current) {
   const today = current || new Date()
   let d = today
 
-  if (!record[dateKey(today)]) d = shiftDays(today, -1)
+  if (!R.isMarked(record[dateKey(today)])) d = shiftDays(today, -1)
 
   let n = 0
   // 上限 3650 天，纯粹是防死循环的保险 —— 记录正常不会连打十年
-  while (n < 3650 && record[dateKey(d)]) {
+  while (n < 3650 && R.isMarked(record[dateKey(d)])) {
     n++
     d = shiftDays(d, -1)
   }
@@ -78,7 +80,7 @@ function longestStreak(record) {
 
   const stamps = []
   Object.keys(record).forEach(function (k) {
-    if (!record[k]) return          // 值为 false 的不算
+    if (!R.isMarked(record[k])) return  // 值为 false 的不算
     const d = parseKey(k)
     if (d) stamps.push(d.getTime()) // 非日期键丢掉
   })
@@ -110,25 +112,75 @@ function aggregate(habits, recordsByHabit, current) {
   const today = current || new Date()
   const todayK = dateKey(today)
 
+  // 本周（周一起）与本月（1 号起）的起点，成就按自然周期结算
+  const wd = today.getDay() === 0 ? 6 : today.getDay() - 1
+  const weekStartK = dateKey(shiftDays(today, -wd))
+  const monthStartK = dateKey(new Date(today.getFullYear(), today.getMonth(), 1))
+
   let totalCheckins = 0
   let bestStreak = 0
   let todayDone = 0
+  let weekCheckins = 0
+  let monthCheckins = 0
   const activeSet = {}
+  const weekSet = {}
+  const monthSet = {}
+  // 「单周 / 单月」成就看历史最好的一周/一月，而不是当前周期，
+  // 否则周一一到进度就归零，和永久徽章的语义冲突
+  const weekCounts = {}
+  const weekDays = {}
+  const monthCounts = {}
+  const monthDays = {}
 
   for (let i = 0; i < list.length; i++) {
     const rec = recs[list[i].id] || {}
-    if (rec[todayK]) todayDone++
+    if (R.isMarked(rec[todayK])) todayDone++
 
     const longest = longestStreak(rec)
     if (longest > bestStreak) bestStreak = longest
 
     Object.keys(rec).forEach(function (k) {
-      if (!rec[k]) return
+      if (!R.isMarked(rec[k])) return
       if (!parseKey(k)) return
       totalCheckins++
       // 用集合去重：多个习惯同一天都打卡，活跃天数只算一天
       activeSet[k] = true
+      if (k >= weekStartK && k <= todayK) {
+        weekCheckins++
+        weekSet[k] = true
+      }
+      if (k >= monthStartK && k <= todayK) {
+        monthCheckins++
+        monthSet[k] = true
+      }
+
+      const d = parseKey(k)
+      if (d) {
+        const dwd = d.getDay() === 0 ? 6 : d.getDay() - 1
+        const wk = dateKey(shiftDays(d, -dwd))
+        const mk = k.slice(0, 7)
+        weekCounts[wk] = (weekCounts[wk] || 0) + 1
+        monthCounts[mk] = (monthCounts[mk] || 0) + 1
+        if (!weekDays[wk]) weekDays[wk] = {}
+        if (!monthDays[mk]) monthDays[mk] = {}
+        weekDays[wk][k] = true
+        monthDays[mk][k] = true
+      }
     })
+  }
+
+  function bestCount(map) {
+    let best = 0
+    Object.keys(map).forEach(function (k) { if (map[k] > best) best = map[k] })
+    return best
+  }
+  function bestSetSize(map) {
+    let best = 0
+    Object.keys(map).forEach(function (k) {
+      const n = Object.keys(map[k]).length
+      if (n > best) best = n
+    })
+    return best
   }
 
   const count = list.length
@@ -138,7 +190,15 @@ function aggregate(habits, recordsByHabit, current) {
     activeDays: Object.keys(activeSet).length,
     bestStreak: bestStreak,
     todayDone: todayDone,
-    todayPct: count ? Math.round((todayDone * 100) / count) : 0
+    todayPct: count ? Math.round((todayDone * 100) / count) : 0,
+    weekCheckins: weekCheckins,
+    weekActiveDays: Object.keys(weekSet).length,
+    monthCheckins: monthCheckins,
+    monthActiveDays: Object.keys(monthSet).length,
+    bestWeekCheckins: bestCount(weekCounts),
+    bestWeekActiveDays: bestSetSize(weekDays),
+    bestMonthCheckins: bestCount(monthCounts),
+    bestMonthActiveDays: bestSetSize(monthDays)
   }
 }
 
@@ -151,7 +211,7 @@ function recentDays(record, count, current) {
     const k = dateKey(d)
     out.push({
       key: k,
-      done: !!record[k],
+      done: R.isMarked(record[k]),
       day: d.getDate(),
       month: d.getMonth() + 1,
       isToday: i === 0
@@ -196,7 +256,7 @@ function calendarWeeks(record, weekCount, current) {
       cells.push({
         key: k,
         day: date.getDate(),
-        done: !!record[k],
+        done: R.isMarked(record[k]),
         // 用字符串比大小即可 —— ISO 日期格式的字典序就是时间序
         future: k > todayK,
         isToday: k === todayK
@@ -207,13 +267,53 @@ function calendarWeeks(record, weekCount, current) {
   return weeks
 }
 
+/**
+ * 近 N 天的日历格子：按周对齐到周一，每格带日期号。
+ * 和 calendarWeeks 的区别是只保留「今天往前 N 天」的范围，
+ * 范围外的格子用 inRange=false 标出来，界面上留空但不改变布局。
+ */
+function dayGrid(record, count, current) {
+  const rec = record || {}
+  const today = current || new Date()
+  const todayK = dateKey(today)
+  const n = Math.max(1, Number(count) || 30)
+  const rangeStart = dateKey(shiftDays(today, -(n - 1)))
+
+  const wd = today.getDay() === 0 ? 6 : today.getDay() - 1
+  const thisMonday = shiftDays(today, -wd)
+  const backWeeks = Math.ceil(Math.max(0, n - 1 - wd) / 7)
+  const start = shiftDays(thisMonday, -backWeeks * 7)
+
+  const weeks = []
+  let cursor = start
+  while (dateKey(cursor) <= todayK) {
+    const cells = []
+    for (let d = 0; d < 7; d++) {
+      const date = shiftDays(cursor, d)
+      const k = dateKey(date)
+      const inRange = k >= rangeStart && k <= todayK
+      cells.push({
+        key: k,
+        day: date.getDate(),
+        done: inRange && R.isMarked(rec[k]),
+        isToday: k === todayK,
+        inRange: inRange,
+        future: k > todayK
+      })
+    }
+    weeks.push(cells)
+    cursor = shiftDays(cursor, 7)
+  }
+  return weeks
+}
+
 /** 统计一个习惯的全部数据 */
 function summarize(record, current) {
   return {
     streak: streak(record, current),
     week: completionRate(record, 7, current),
     month: completionRate(record, 30, current),
-    total: Object.keys(record).filter(function (k) { return record[k] }).length
+    total: Object.keys(record).filter(function (k) { return R.isMarked(record[k]) }).length
   }
 }
 
@@ -228,5 +328,6 @@ module.exports = {
   recentDays: recentDays,
   completionRate: completionRate,
   calendarWeeks: calendarWeeks,
+  dayGrid: dayGrid,
   summarize: summarize
 }

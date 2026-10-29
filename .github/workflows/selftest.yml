@@ -1,0 +1,22 @@
+name: selftest
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 纯函数与本地存储桩，不依赖微信环境
+      - name: 小程序逻辑自检
+        run: npm test
+
+      - name: 云函数单测
+        run: npm run test:cloud

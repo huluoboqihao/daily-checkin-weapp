@@ -1,0 +1,7 @@
+{
+  "name": "genhabits",
+  "version": "1.0.0",
+  "description": "根据一句描述生成 1-3 个可执行的小习惯",
+  "main": "index.js",
+  "private": true
+}

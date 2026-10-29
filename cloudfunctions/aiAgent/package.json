@@ -1,0 +1,7 @@
+{
+  "name": "aiagent",
+  "version": "1.0.0",
+  "description": "自然语言操作打卡数据的 Agent",
+  "main": "index.js",
+  "private": true
+}

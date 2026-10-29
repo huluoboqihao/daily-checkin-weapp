@@ -1,13 +1,5 @@
-# Local WeChat Developer Tools settings and credentials
-project.private.config.json
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-node_modules/
-coverage/
+﻿node_modules/
+.cloudbase/
 .DS_Store
-Thumbs.db
-.idea/
-.vscode/
+*.log
+screenshots/

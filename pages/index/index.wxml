@@ -1,6 +1,19 @@
-<view class="page">
+<view class="page {{themeClass}} {{fontClass}}">
+  <image class="page-bg" src="/assets/bg-wall.jpg" mode="aspectFill" />
 
-  <view class="hero">
+  <!-- AI 输入：放在最顶部，随时可用 -->
+  <view class="card ai-bar ai-top">
+    <view class="ai-dot">AI</view>
+    <input class="ai-bar-input" placeholder="问 AI，或说：把读书打卡"
+           value="{{agentInput}}" bindinput="onAgentInput"
+           confirm-type="send" bindconfirm="sendAgent" />
+    <view class="ai-more" catchtap="openAiPanel">⋯</view>
+    <view class="ai-bar-btn {{agentBusy ? 'busy' : ''}}" bindtap="sendAgent">{{agentBusy ? '…' : '执行'}}</view>
+  </view>
+  <view class="ai-reply" wx:if="{{agentReply}}">{{agentReply}}</view>
+
+  <view class="hero {{animClass}}">
+    <image class="hero-bg" src="/assets/hero-glow.jpg" mode="aspectFill" />
     <view class="hero-date">{{dateLabel}}</view>
     <view class="hero-mid">
       <text class="prog-n">{{doneCount}}</text>
@@ -23,6 +36,41 @@
     <view class="cum-note" wx:if="{{total > 0}}">首次使用的示例记录 · 之后的打卡都是真实的</view>
   </view>
 
+  <!-- 新手引导：第一次进来时讲清楚 AI 能做什么，关掉后不再出现 -->
+  <view class="guide {{animClass}}" wx:if="{{guideVisible}}">
+    <view class="guide-top">
+      <text class="guide-t">AI 能帮你做四件事</text>
+      <text class="guide-x" catchtap="dismissGuide">✕</text>
+    </view>
+    <view class="guide-item">
+      <text class="guide-n">1</text>
+      <text class="guide-d">粘贴聊天记录，自动拆成待办和时间</text>
+    </view>
+    <view class="guide-item">
+      <text class="guide-n">2</text>
+      <text class="guide-d">AI 教练根据你的完成率给建议</text>
+    </view>
+    <view class="guide-item">
+      <text class="guide-n">3</text>
+      <text class="guide-d">说一句「想开始健身」，生成习惯清单</text>
+    </view>
+    <view class="guide-item">
+      <text class="guide-n">4</text>
+      <text class="guide-d">一键生成这周的回顾海报</text>
+    </view>
+    <view class="guide-btn" catchtap="tryGuide">先试一条待办</view>
+  </view>
+
+  <!-- 断签救援：20 点后、连续 ≥3 天、今天还没打 -->
+  <view class="rescue {{animClass}}" wx:if="{{rescue}}">
+    <view class="rs-main">
+      <view class="rs-title">今晚别断</view>
+      <view class="rs-msg">{{rescue.message}}</view>
+    </view>
+    <view class="rs-btn" catchtap="rescueCheckin">完成</view>
+    <view class="rs-close" catchtap="dismissRescue">✕</view>
+  </view>
+
   <!-- 本周：一眼看出这周断了没有 -->
   <view class="card week" wx:if="{{total > 0}}">
     <view class="wk" wx:for="{{week}}" wx:key="key">
@@ -31,23 +79,104 @@
     </view>
   </view>
 
+  <!-- 过期待办：日期早于今天还没做完。给「完成」和「挪到今天」两个出口 -->
+  <block wx:if="{{overdueTasks.length > 0}}">
+    <view class="sec">
+      <text class="sec-title">已过期</text>
+      <text class="sec-more">{{overdueCount}} 条 · 长按可编辑</text>
+    </view>
+    <view class="tasks">
+      <view class="task overdue tap-scale"
+            wx:for="{{overdueTasks}}" wx:key="id"
+            data-id="{{item.id}}" bindtap="toggleTask" bindlongpress="openEdit">
+        <text class="t-time">{{item.dateLabel}}</text>
+        <view class="t-body">
+          <view class="t-title">
+            <text class="t-dot p{{item.priority}}" wx:if="{{item.priority !== 2}}"></text>{{item.title}}
+          </view>
+          <view class="t-sub">逾期 {{item.overdueDays}} 天{{item.location ? ' · ' + item.location : ''}}</view>
+        </view>
+        <view class="t-today" data-id="{{item.id}}" catchtap="moveToToday">今天</view>
+        <view class="t-check {{item.done ? 'on' : ''}}">{{item.done ? '✓' : ''}}</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 今日待办：一次性事项，和习惯分开 -->
+  <block wx:if="{{todayTasks.length > 0}}">
+    <view class="sec">
+      <text class="sec-title">今日待办</text>
+      <text class="sec-more" bindtap="goImport">导入 ›</text>
+    </view>
+    <view class="tasks">
+      <view class="task {{item.done ? 'done' : ''}} tap-scale"
+            wx:for="{{todayTasks}}" wx:key="id"
+            data-id="{{item.id}}" bindtap="toggleTask" bindlongpress="openEdit">
+        <text class="t-time">{{item.startTime || '--:--'}}</text>
+        <view class="t-body">
+          <view class="t-title">
+            <text class="t-dot p{{item.priority}}" wx:if="{{item.priority !== 2}}"></text>{{item.title}}
+          </view>
+          <view class="t-sub">{{item.durationMin}} 分钟{{item.location ? ' · ' + item.location : ''}}</view>
+          <view class="t-conflict {{taskConflicts[item.id].severity}}" wx:if="{{taskConflicts[item.id]}}">
+            {{taskConflicts[item.id].message}}
+          </view>
+        </view>
+        <view class="t-check {{item.done ? 'on' : ''}}">{{item.done ? '✓' : ''}}</view>
+      </view>
+    </view>
+  </block>
+
+  <block wx:if="{{todayTasks.length === 0 && upcomingTasks.length > 0}}">
+    <view class="sec">
+      <text class="sec-title">接下来</text>
+      <text class="sec-more" bindtap="goImport">导入 ›</text>
+    </view>
+    <view class="tasks">
+      <view class="task tap-scale"
+            wx:for="{{upcomingTasks}}" wx:key="id" data-id="{{item.id}}" bindlongpress="openEdit">
+        <text class="t-time">{{item.dateLabel}}</text>
+        <view class="t-body">
+          <view class="t-title">
+            <text class="t-dot p{{item.priority}}" wx:if="{{item.priority !== 2}}"></text>{{item.title}}
+          </view>
+          <view class="t-sub">{{item.startTime || '时间待定'}} · {{item.durationMin}} 分钟{{item.location ? ' · ' + item.location : ''}}</view>
+          <view class="t-conflict {{taskConflicts[item.id].severity}}" wx:if="{{taskConflicts[item.id]}}">
+            {{taskConflicts[item.id].message}}
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 独立新建入口：不依赖导入页 -->
+  <view class="new-task" bindtap="newTask">＋ 新建待办</view>
+
+  <view class="import-row" wx:if="{{todayTasks.length === 0 && upcomingTasks.length === 0 && total > 0}}" bindtap="goImport">
+    <text class="ir-t">从聊天或通知导入待办</text>
+    <text class="ir-a">›</text>
+  </view>
+
   <view class="empty" wx:if="{{total === 0}}">
+    <image class="empty-art" src="/assets/empty-plant.jpg" mode="aspectFit" />
     <view class="empty-t">还没有习惯</view>
     <view class="empty-s">去「习惯」页挑几个，或者从推荐里一键添加</view>
     <view class="empty-btn" bindtap="toHabits">去添加</view>
   </view>
 
   <view class="list">
-    <view class="habit {{item.done ? 'done' : ''}}"
+    <view class="habit {{item.done ? 'done' : ''}} {{item.id === timerId ? 'timing' : ''}} {{item.id === popId ? 'just-done' : ''}} tap-scale"
           wx:for="{{board}}" wx:key="id"
-          data-id="{{item.id}}" bindtap="toggle">
+          data-id="{{item.id}}" bindtap="toggle" bindlongpress="openNote">
       <view class="h-icon" style="background:{{item.color}}">{{item.icon}}</view>
       <view class="h-body">
         <view class="h-name">{{item.name}}</view>
         <view class="h-streak">
-          <text wx:if="{{item.streak > 0}}">连续 {{item.streak}} 天</text>
+          <text wx:if="{{item.type === 'timer'}}">计时 {{item.targetSeconds / 60}} 分钟{{item.id === timerId ? ' · 计时中' : ''}}</text>
+          <text wx:elif="{{item.streak > 0}}">连续 {{item.streak}} 天</text>
           <text wx:else>今天开始</text>
         </view>
+        <view class="h-note" wx:if="{{item.note}}">{{item.note}}</view>
       </view>
       <view class="h-check {{item.done ? 'on' : ''}}">{{item.done ? '✓' : ''}}</view>
     </view>
@@ -89,7 +218,102 @@
   </block>
 
   <view class="tip" wx:if="{{total > 0}}">
-    点一下卡片就是打卡，再点一下取消。
+    点一下卡片就是打卡，再点一下取消。计时习惯点开后到点手动完成。
+  </view>
+
+  <!-- 显示偏好：深色模式与字号，四个页面共用同一份设置 -->
+  <view class="display-row">
+    <view class="display-btn" catchtap="toggleTheme">{{isDark ? '☀ 浅色' : '☾ 深色'}}</view>
+    <view class="display-btn" catchtap="cycleFont">Aa 字号：{{fontLabel}}</view>
+  </view>
+
+  <!-- 待办编辑：长按任务卡打开 -->
+  <view class="edit-mask" wx:if="{{editingTask}}" catchtap="closeEdit">
+    <view class="edit-card" catchtap="noop">
+      <view class="edit-h">{{editingTask.isNew ? '新建待办' : '编辑待办'}}</view>
+      <input class="edit-input" value="{{editingTask.title}}" bindinput="onEditField" maxlength="24"
+             placeholder="做什么" placeholder-class="ph" />
+      <view class="edit-row">
+        <picker mode="date" value="{{editingTask.date}}" bindchange="onEditDate">
+          <view class="edit-chip">{{editingTask.date}}</view>
+        </picker>
+        <picker mode="time" value="{{editingTask.startTime}}" bindchange="onEditTime">
+          <view class="edit-chip">{{editingTask.startTime || '选时间'}}</view>
+        </picker>
+      </view>
+      <view class="edit-row">
+        <input class="edit-input half" type="number" value="{{editingTask.durationMin}}"
+               data-field="durationMin" bindinput="onEditField"
+               placeholder="分钟" placeholder-class="ph" />
+        <input class="edit-input half" value="{{editingTask.location}}"
+               data-field="location" bindinput="onEditField" maxlength="12"
+               placeholder="地点（可选）" placeholder-class="ph" />
+      </view>
+      <view class="edit-row pri-row">
+        <text class="edit-lbl">优先级</text>
+        <view class="pri {{editingTask.priority === 1 ? 'on' : ''}}" data-v="1" bindtap="onEditPriority">低</view>
+        <view class="pri {{editingTask.priority === 2 ? 'on' : ''}}" data-v="2" bindtap="onEditPriority">中</view>
+        <view class="pri {{editingTask.priority === 3 ? 'on' : ''}}" data-v="3" bindtap="onEditPriority">高</view>
+      </view>
+      <view class="to-habit" wx:if="{{!editingTask.isNew}}" bindtap="taskToHabit">把这个待办变成习惯</view>
+      <view class="edit-actions">
+        <view class="e-btn danger" wx:if="{{!editingTask.isNew}}" bindtap="deleteTask">删除</view>
+        <view class="e-btn ghost" bindtap="closeEdit">取消</view>
+        <view class="e-btn main" bindtap="saveEdit">{{editingTask.isNew ? '添加' : '保存'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 打卡备注：长按已完成的习惯打开 -->
+  <view class="edit-mask" wx:if="{{noteEditing}}" catchtap="cancelNote">
+    <view class="edit-card" catchtap="noop">
+      <view class="edit-h">「{{noteEditing.name}}」今天怎么样？</view>
+      <textarea class="note-input" placeholder="一句话备注，比如：今天只做了 10 分钟"
+                placeholder-class="ph" value="{{noteEditing.note}}"
+                maxlength="60" auto-height bindinput="onNoteInput" />
+      <view class="edit-actions">
+        <view class="e-btn ghost" bindtap="cancelNote">取消</view>
+        <view class="e-btn main" bindtap="saveNote">保存</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- AI 功能面板：替代原生 action sheet，样式和页面一致 -->
+  <view class="ai-mask" wx:if="{{aiPanel}}" bindtap="closeAiPanel"></view>
+  <view class="ai-sheet" wx:if="{{aiPanel}}">
+    <view class="ai-sheet-t">AI 功能</view>
+    <view class="ai-opt" data-i="0" bindtap="aiPanelPick">
+      <text class="ai-opt-i">📥</text><text class="ai-opt-t">从聊天导入待办</text>
+    </view>
+    <view class="ai-opt" data-i="1" bindtap="aiPanelPick">
+      <text class="ai-opt-i">💬</text><text class="ai-opt-t">问问 AI 教练</text>
+    </view>
+    <view class="ai-opt" data-i="2" bindtap="aiPanelPick">
+      <text class="ai-opt-i">✨</text><text class="ai-opt-t">AI 帮我定习惯</text>
+    </view>
+    <view class="ai-opt" data-i="3" bindtap="aiPanelPick">
+      <text class="ai-opt-i">📊</text><text class="ai-opt-t">生成本周回顾</text>
+    </view>
+    <view class="ai-cancel" bindtap="closeAiPanel">取消</view>
+  </view>
+
+  <!-- 计时中：只允许一个，离开页面即暂停 -->
+  <view class="timer-mask" wx:if="{{timer}}">
+    <view class="timer-card">
+      <view class="timer-ring" style="{{timerRing}}">
+        <view class="timer-ring-in">
+          <text class="timer-clock">{{timerClock}}</text>
+          <text class="timer-target">目标 {{timer.targetLabel}}</text>
+        </view>
+      </view>
+      <view class="timer-name">{{timer.name}}</view>
+      <view class="timer-state" wx:if="{{!timer.running}}">已暂停 · 点卡片或「继续」接着计时</view>
+      <view class="timer-actions">
+        <view class="t-btn ghost" bindtap="cancelTimer">放弃</view>
+        <view class="t-btn ghost2" bindtap="{{timer.running ? 'pauseTimer' : 'resumeTimer'}}">{{timer.running ? '暂停' : '继续'}}</view>
+        <view class="t-btn {{timerMet ? 'ok' : 'wait'}}" bindtap="finishTimer">{{timerMet ? '完成' : '还没到'}}</view>
+      </view>
+    </view>
   </view>
 
 </view>
